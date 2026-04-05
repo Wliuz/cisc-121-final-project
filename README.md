@@ -70,7 +70,7 @@ The program is meant to teach the user how insertion sort works. It demonstrates
 <img width="551" height="834" alt="image" src="https://github.com/user-attachments/assets/285bb80f-9b51-46c9-b7f8-0f6f7149e297" />
 
 
-##**How to run**
+## How to run
 
 Clone repository and install gradio using pip with: pip install gradio
 Then run python app.py
