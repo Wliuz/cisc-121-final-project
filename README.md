@@ -79,5 +79,6 @@ Alternatively, use the hugging face link:
 https://huggingface.co/spaces/Wizzzdo/Visualizing_Insertion_sort
 
 
-
+## Acknowledgement
+The implementation was in part coded by Claude Sonnet 4.6 LLM using prompts based on this README.
 
