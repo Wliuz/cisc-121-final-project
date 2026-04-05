@@ -4,7 +4,6 @@ import gradio as gr
 class InsertionSortVisualizer:
     """
     Insertion sort driven entirely by the user (YES/NO per comparison).
-
     Key design decision that eliminates the bar-height flicker bug:
     - self.arr is NEVER partially mutated during a pass.
     - A separate self.display list (always full-length) is what the bars read.
@@ -25,6 +24,7 @@ class InsertionSortVisualizer:
         self.temp = None     # value being inserted this pass
 
         self.sort_complete = False
+        self.sort_correct = False   # NEW: was the final array actually sorted?
         self.log = []
         self.message = ""
 
@@ -45,13 +45,17 @@ class InsertionSortVisualizer:
         )
 
         for idx, val in enumerate(self.display):
-            # Priority: comparing > complete > inserting > sorted > unsorted
-            if idx in (self.cmp_left, self.cmp_right):
-                color, label_color = "#f5a623", "#f5a623"
-            elif self.sort_complete:
+            # Priority: done states first, then per-element roles
+            if self.sort_complete and self.sort_correct:
                 color, label_color = "#2ecc71", "#2ecc71"
+            elif self.sort_complete and not self.sort_correct:
+                color, label_color = "#e74c3c", "#e74c3c"   # red = wrong final order
             elif idx == self.hole and not self.sort_complete:
+                # The element being inserted is ALWAYS red, even during a comparison
                 color, label_color = "#e74c3c", "#e74c3c"
+            elif idx == self.cmp_left:
+                # Only the left neighbour being compared against turns orange
+                color, label_color = "#f5a623", "#f5a623"
             elif idx < self.i:
                 color, label_color = "#3498db", "#3498db"
             else:
@@ -70,6 +74,12 @@ class InsertionSortVisualizer:
 
         bars += "</div>"
 
+        # Legend reflects the two possible "done" states
+        if self.sort_complete and not self.sort_correct:
+            done_entry = ("#e74c3c", "Incorrectly Sorted ⚠️")
+        else:
+            done_entry = ("#2ecc71", "Complete ✅")
+
         legend = (
             '<div style="display:flex;justify-content:center;flex-wrap:wrap;gap:18px;padding:14px 20px;'
             'background:#181825;border-radius:0 0 12px 12px;border-top:1px solid #313244;">'
@@ -77,12 +87,12 @@ class InsertionSortVisualizer:
         for hex_color, label in [
             ("#3498db", "Sorted"),
             ("#e74c3c", "Currently Inserting"),
-            ("#f5a623", "Comparing"),
+            ("#f5a623", "Neighbour Being Compared"),
             ("#636e72", "Unsorted"),
-            ("#2ecc71", "Complete"),
+            done_entry,
         ]:
             legend += (
-                f'<span style="font-family:\'Courier New\',monospace;font-size:13px;color:#000000;'
+                f'<span style="font-family:\'Courier New\',monospace;font-size:13px;color:#cdd6f4;'
                 f'display:flex;align-items:center;gap:6px;">'
                 f'<span style="display:inline-block;width:14px;height:14px;background:{hex_color};border-radius:2px;"></span>'
                 f'{label}</span>'
@@ -126,7 +136,16 @@ class InsertionSortVisualizer:
         self.i += 1
         if self.i >= self.n:
             self.sort_complete = True
-            self.message = f"🎉 Sorting complete!  Final: {list(self.arr)}"
+            # NEW: check whether the user's answers actually produced a sorted array
+            self.sort_correct = all(self.arr[k] <= self.arr[k + 1] for k in range(self.n - 1))
+            if self.sort_correct:
+                self.message = f"🎉 Sorting complete!  Final: {list(self.arr)}"
+            else:
+                self.message = (
+                    f"⚠️ Sort finished but the array is NOT correctly sorted!\n"
+                    f"Result: {list(self.arr)}\n"
+                    f"You may have answered NO when you should have said YES."
+                )
             self.log.append(self.message)
         else:
             self._begin_pass()
@@ -206,16 +225,14 @@ def build_ui():
     with gr.Blocks(theme=gr.themes.Soft(), css=css) as demo:
         gr.Markdown("""
 # 🎮 Interactive Insertion Sort
-
 Control every swap yourself — watch the bars respond in real time.
-
 | Colour | Meaning |
 |--------|---------|
 | 🔵 Blue | Already sorted |
-| 🔴 Red | Being inserted right now |
-| 🟠 Orange | Currently being compared |
+| 🔴 Red | Being inserted right now (or incorrectly sorted result) |
+| 🟠 Orange | Left neighbour currently being compared against |
 | ⚫ Grey | Not yet reached |
-| 🟢 Green | Sorting complete |
+| 🟢 Green | Sorting complete and correct |
 """)
 
         with gr.Row():
