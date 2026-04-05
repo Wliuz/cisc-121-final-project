@@ -182,6 +182,8 @@ class InsertionSortVisualizer:
         return self._render(), self.message, "\n".join(self.log)
 
     def answer(self, yes: bool):
+        if not self.arr:
+            return self._render(), "⚠️ Please enter numbers and click Start Sorting first.", "\n".join(self.log)
         if self.sort_complete:
             return self._render(), "🎉 Already complete — press Reset to start over.", "\n".join(self.log)
 
